@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: stg_inspections
+    description: Staging table for inspections
+    columns:
+      - name: restaurant_name
+      - name: zip_code
+      - name: inspection_date
+      - name: score
+      - name: address
+      - name: facility_id
+      - name: process_description

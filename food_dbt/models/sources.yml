@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: dagster
+    schema: src
+    tables:
+      - name: refresh_inspections
+        meta:
+          dagster:
+            asset_key: ["refresh_inspections"]
+
+  - name: src
+    schema: src
+    tables:
+      - name: src_inspections

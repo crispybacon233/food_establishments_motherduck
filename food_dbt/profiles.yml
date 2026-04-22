@@ -1,0 +1,16 @@
+food_dbt:
+  outputs:
+    dev:
+      type: duckdb
+      path:  "md:food_establishments?motherduck_token={{env_var('motherduck_token')}}"
+      threads: 4
+      extensions:
+        - httpfs
+        - parquet
+        - aws
+      secrets:
+        - type: gcs
+          name: gcs_data
+          key_id: "{{ env_var('KEY_ID') }}"
+          secret: "{{ env_var('SECRET') }}"
+  target: dev

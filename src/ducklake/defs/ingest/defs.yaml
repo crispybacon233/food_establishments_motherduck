@@ -1,0 +1,8 @@
+type: dagster.PythonScriptComponent
+
+attributes:
+  execution:
+    path: refresh_inspections.py
+  assets:
+    - key: refresh_inspections
+      description: "Refresh the inspections table"
