@@ -3,6 +3,7 @@
 {{ config(
     materialized='incremental',
     incremental_strategy='merge',
+    merge_update_columns=[],
     unique_key=['facility_id', 'inspection_date', 'process_description'],
     schema='stg', 
     database='food_establishments',
