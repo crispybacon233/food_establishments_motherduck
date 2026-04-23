@@ -3,10 +3,11 @@ from urllib.parse import unquote
 
 from playwright.sync_api import sync_playwright, Page
 from bs4 import BeautifulSoup
+from datetime import datetime
 import time
 
 
-def get_coordinates(page: Page) -> tuple[float, float] | None:
+def get_coordinates(page: Page) -> tuple[float | None, float | None]:
     """
     Get the coordinates of the establishment from the Google Maps page.
     Args:
@@ -19,17 +20,17 @@ def get_coordinates(page: Page) -> tuple[float, float] | None:
 
     a = soup.find("a", attrs={"aria-label": "Sign in"})
     if not a:
-        return None
+        return None, None
 
     href: str | None = a.get("href")
     if not href:
-        return None
+        return None, None
 
     decoded_href = unquote(href)
 
     match = re.search(r'@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)', decoded_href)
     if not match:
-        return None
+        return None, None
 
     return float(match.group(1)), float(match.group(2))
 
@@ -38,7 +39,7 @@ def get_google_name(page: Page) -> str | None:
     """Get Google's name for the establishment."""
     try:
         el = page.locator('//h1[@class="DUwDvf lfPIob"]').first
-        text = el.text_content()
+        text = el.text_content(timeout=1000)
         return text.strip() if text else None
     except:
         return None
@@ -46,20 +47,21 @@ def get_google_name(page: Page) -> str | None:
 
 def get_price(page: Page) -> str | None:
     try:
-        print('Getting price...')
-        price = page.locator('.mgr77e').first.text_content(timeout=3000)
-        print(f"Price: {price}")
-        return price
+        print("Getting price...")
+        locator = page.locator(".mgr77e").first
+        locator.wait_for(state="visible", timeout=3000)
+        text = locator.text_content(timeout=3000)
+        return text.strip() if text else None
     except:
         return None
 
 
 def get_category(page: Page) -> str | None:
-    """Get establishment category type."""
-    print('Getting category...')
     try:
-        el = page.locator(".DkEaL").first
-        text = el.text_content()
+        print("Getting category...")
+        locator = page.locator(".DkEaL").first
+        locator.wait_for(state="visible", timeout=3000)
+        text = locator.text_content(timeout=3000)
         return text.strip() if text else None
     except:
         return None
@@ -67,7 +69,10 @@ def get_category(page: Page) -> str | None:
 
 def n_stars_reviews(page: Page) -> tuple[float | None, int | None]:
     try:
-        text = page.locator(".F7nice").first.inner_text().strip()
+        locator = page.locator(".F7nice").first
+        locator.wait_for(state="visible", timeout=3000)
+        text = locator.inner_text(timeout=3000).strip()
+
         stars_match = re.search(r"\b(\d\.\d)\b", text)
         reviews_match = re.search(r"\(([\d,]+)\)", text)
 
@@ -75,7 +80,71 @@ def n_stars_reviews(page: Page) -> tuple[float | None, int | None]:
         n_reviews = int(reviews_match.group(1).replace(",", "")) if reviews_match else None
         return stars, n_reviews
     except:
-        return (None, None)
+        return None, None
+
+
+def scrape_establishment(establishment_data: dict, page: Page) -> dict:
+    """
+    Scrape the establishment information from Google Maps.
+    Args:
+        establishment_data: A dictionary containing the establishment data.
+    Returns:
+        A dictionary containing the establishment information.
+    """
+    print('Getting the establishment information...')
+
+    restaurant_name = establishment_data['restaurant_name']
+    address = establishment_data['address']
+    zip_code = establishment_data['zip_code']
+    facility_id = establishment_data['facility_id']
+
+    try:
+        coordinates = get_coordinates(page)
+        latitude = coordinates[0]
+        longitude = coordinates[1]
+        print(latitude, longitude)
+    except Exception as e:
+        print(f"{e}")
+
+    try: 
+        google_name = get_google_name(page)
+        print('Google name: ', google_name)
+    except Exception as e:
+        print(f"{e}")
+    
+
+    try:
+        price = get_price(page)
+        print(price)
+    except Exception as e:
+        print(f"{e}")
+
+    try:
+        category = get_category(page)
+        print(category)
+    except Exception as e:
+        print(f"{e}")
+
+    try:
+        stars, n_reviews = n_stars_reviews(page)
+        print(stars, n_reviews)
+    except Exception as e:
+        print(f"{e}")
+
+    return {
+        'restaurant_name': restaurant_name,
+        'zip_code': zip_code,
+        'address': address,
+        'facility_id': facility_id,
+        'latitude': latitude,
+        'longitude': longitude,
+        'google_name': google_name,
+        'average_rating': stars,
+        'category': category,
+        'price': price,
+        'n_reviews': n_reviews,
+        'updated_at': datetime.now().date(),
+    }
 
 
 if __name__ == "__main__":
@@ -120,24 +189,33 @@ if __name__ == "__main__":
         # ==================================================
         # Get the establishment information
         # ==================================================
-        print('Getting the establishment information...')
-        try:
-            coordinates = get_coordinates(page)
-            print(coordinates)
-        except Exception as e:
-            print(f"{e}")
+        # print('Getting the establishment information...')
+        # try:
+        #     coordinates = get_coordinates(page)
+        #     print(coordinates)
+        # except Exception as e:
+        #     print(f"{e}")
 
-        name = get_google_name(page)
-        print(name)
+        # name = get_google_name(page)
+        # print(name)
             
-        price = get_price(page)
-        print(price)
+        # price = get_price(page)
+        # print(price)
 
-        category = get_category(page)
-        print(category)
+        # category = get_category(page)
+        # print(category)
 
-        stars, n_reviews = n_stars_reviews(page)
-        print(stars, n_reviews)
+        # stars, n_reviews = n_stars_reviews(page)
+        # print(stars, n_reviews)
+
+        establishment_data = {
+            'restaurant_name': 'Burger King',
+            'address': '13450 N US 183 HWY Svrd SB Austin TX',
+            'zip_code': '78753',
+            'facility_id': 1234567890
+        }
+        scraped_data = scrape_establishment(establishment_data, page)
+        print('Scraped data: ', scraped_data)
 
         browser.close()
         print('Browser closed')

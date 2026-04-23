@@ -85,11 +85,14 @@ if __name__ == "__main__":
         .lazy()
         .pipe(strip_coor)
         .pipe(create_inspection_id)
-        .filter(~pl.col('inspection_id').is_in(existing_inspection_ids))
+        .filter(~pl.col('inspection_id').is_in(existing_inspection_ids)) # Filter out inspections that are already in the database
         .drop('inspection_id')
         .collect(engine='streaming')
     )
 
+    # ====================================================
+    # Write the latest inspections to a parquet file
+    # ====================================================
     if latest_inspections.height > 0:
         latest_inspections.write_parquet('s3://' + WRITE_PATH, storage_options=storage_options)
         print(f"Wrote {latest_inspections.height} inspections to {WRITE_PATH}")
@@ -98,7 +101,7 @@ if __name__ == "__main__":
 
 
     # ====================================================
-    # Create a new table view in motherduck
+    # Create/Refresh table view in motherduck for the inspections
     # ====================================================
     conn = duckdb.connect('md:food_establishments')
     conn.execute("USE food_establishments")

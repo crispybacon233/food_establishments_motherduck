@@ -113,33 +113,36 @@ def _(old_establishments, pl):
 
 
 @app.cell
-def _(old_establishments, pl, storage_options):
+def _(datetime, old_establishments, pl, storage_options):
     # Write parquet of ATX establishments with preexisting scraped data
     (
         old_establishments
         .filter(pl.col('state') == 'TX')
         .unique('facility_id')
         .with_columns(
+            facility_id = pl.col('facility_id').cast(pl.Int64),
             address = pl.col('address') + ' ' + pl.col('city'),
             inspection_date = pl.col('inspection_date').cast(pl.Datetime).cast(pl.Date),
             zip_code = pl.col('zip').cast(pl.Int32).cast(pl.Utf8),
-            price = pl.col('price').cast(pl.Utf8)
+            price = pl.col('price').cast(pl.Utf8),
+            updated_at = pl.lit(datetime.datetime.now().date()),
         )
         .select(
             'restaurant_name',
             'zip_code',
-            'inspection_date',
-            'score',
+            # 'inspection_date',
+            # 'score',
             'address',
             'facility_id',
-            'process_description',
+            # 'process_description',
             'latitude',
             'longitude',
             'google_name',
             'average_rating',
             'category',
             'price',
-            'n_reviews'
+            'n_reviews',
+            'updated_at',
         )
         .write_parquet('s3://food-establishments-cnmso3jc9/raw/austin/establishments/old_establishment_data.parquet', storage_options=storage_options)
     )
@@ -166,7 +169,6 @@ def _(old_establishments, pl):
 def _(duckdb):
     with duckdb.connect('md:food_establishments') as conn:
         print(conn.sql(f"SELECT * FROM src.src_inspections").pl())
-
     return
 
 
@@ -175,7 +177,7 @@ def _(pl):
     pl.DataFrame([
         {'name': 'maccas', 'address': '123 butt str'},
         {'name': 'bking', 'address': '456 weener lane'}
-    ])
+    ]).to_dicts()
     return
 
 
