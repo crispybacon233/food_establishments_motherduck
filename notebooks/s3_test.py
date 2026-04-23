@@ -8,12 +8,13 @@ app = marimo.App(width="columns")
 def _():
     import marimo as mo
     import polars as pl
+    import duckdb
     import gcsfs
     import datetime
     from dotenv import load_dotenv
     import os
     load_dotenv()
-    return datetime, mo, os, pl
+    return datetime, duckdb, mo, os, pl
 
 
 @app.cell
@@ -91,7 +92,7 @@ def _(mo):
 
 @app.cell
 def _(pl, storage_options):
-    est_path = 's3://food-establishments-cnmso3jc9/raw/austin/establishments/*.parquet'
+    est_path = 's3://food-establishments-cnmso3jc9/old_establishments.parquet'
     old_establishments = pl.read_parquet(est_path, storage_options=storage_options)
     return (old_establishments,)
 
@@ -158,6 +159,23 @@ def _(old_establishments, pl):
         .agg(pl.len())
         .sort(by='len')
     )
+    return
+
+
+@app.cell
+def _(duckdb):
+    with duckdb.connect('md:food_establishments') as conn:
+        print(conn.sql(f"SELECT * FROM src.src_inspections").pl())
+
+    return
+
+
+@app.cell
+def _(pl):
+    pl.DataFrame([
+        {'name': 'maccas', 'address': '123 butt str'},
+        {'name': 'bking', 'address': '456 weener lane'}
+    ])
     return
 
 
