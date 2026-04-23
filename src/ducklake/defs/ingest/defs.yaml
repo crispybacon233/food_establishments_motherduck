@@ -15,4 +15,15 @@ attributes:
   assets:
     - key: enrich_establishment_data
       description: "Enrich the establishment data"
-      deps: ["stg_inspections"]
+      deps: ["stg_inspections", "stg_establishments"]
+
+---
+
+type: dagster.PythonScriptComponent
+attributes:
+  execution:
+    path: int_establishments.py
+  assets:
+    - key: int_establishments
+      description: "Create the establishments view in the motherduck source schema"
+      deps: ["enrich_establishment_data"]

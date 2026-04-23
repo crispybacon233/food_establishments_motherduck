@@ -12,7 +12,12 @@
 
 
 WITH inspections AS (
-    SELECT * FROM {{ source('src', 'src_inspections') }}
+    SELECT 
+        facility_id,
+        inspection_date,
+        process_description,
+        score
+    FROM {{ source('src', 'src_inspections') }}
 )
 
 

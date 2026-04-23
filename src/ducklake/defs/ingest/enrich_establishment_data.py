@@ -50,11 +50,18 @@ def get_all_inspection() -> pl.DataFrame:
         A Polars dataframe of all inspections.
     """
     with duckdb.connect('md:food_establishments') as conn:
-        return conn.sql(f"""
+        inspections = conn.sql(f"""
         SELECT *
         FROM stg.stg_inspections
         WHERE inspection_date >= TODAY() - INTERVAL '1 YEAR'
         """).pl()
+
+        establishments = conn.sql(f"""
+        SELECT *
+        FROM stg.stg_establishments
+        """).pl()
+
+        return establishments.join(inspections, on='facility_id', how='left')
 
 
 def get_already_scraped_establishment_ids() -> list[int]:
