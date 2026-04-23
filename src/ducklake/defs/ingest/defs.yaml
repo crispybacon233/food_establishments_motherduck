@@ -27,3 +27,14 @@ attributes:
     - key: int_establishments
       description: "Create the establishments view in the motherduck source schema"
       deps: ["enrich_establishment_data"]
+
+---
+
+type: dagster.PythonScriptComponent
+attributes:
+  execution:
+    path: output_files.py
+  assets:
+    - key: output_files
+      description: "Create the output files"
+      deps: ["int_establishments", "stg_inspections"]
