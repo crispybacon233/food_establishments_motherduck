@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright, Page
 from bs4 import BeautifulSoup
 import time
 
-from utils.establishment_google_scraper import scrape_establishment
+from ducklake.utils.establishment_google_scraper import scrape_establishment
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             print(f'Scraped data: {scraped_data}')
             scraped_data_list.append(scraped_data)
 
-            if len(scraped_data_list) >= 1:
+            if len(scraped_data_list) >= 2:
                 temp_df = (
                     pl.DataFrame(scraped_data_list)
                     .with_columns(

@@ -1,8 +1,18 @@
 type: dagster.PythonScriptComponent
-
 attributes:
   execution:
     path: refresh_inspections.py
   assets:
     - key: refresh_inspections
       description: "Refresh the inspections table"
+
+---
+
+type: dagster.PythonScriptComponent
+attributes:
+  execution:
+    path: enrich_establishment_data.py
+  assets:
+    - key: enrich_establishment_data
+      description: "Enrich the establishment data"
+      deps: ["stg_inspections"]
