@@ -9,10 +9,11 @@ def _():
     import marimo as mo
     import polars as pl
     import gcsfs
+    import datetime
     from dotenv import load_dotenv
     import os
     load_dotenv()
-    return mo, os, pl
+    return datetime, mo, os, pl
 
 
 @app.cell
@@ -57,7 +58,25 @@ def _(pl, storage_options):
 
 @app.cell
 def _(test_read):
-    test_read
+    test_read.columns
+    return
+
+
+@app.cell
+def _(datetime, pl, test_read):
+    (
+        test_read
+        .filter(pl.col('inspection_date') >= datetime.date(2025, 1, 1))
+        .select(
+            pl.col('address')
+            .str.to_uppercase()
+            .str.split(' ')
+            .list.slice(-1, -1)  
+        )
+        .group_by('address')
+        .agg(pl.len())
+        .sort(by='len', descending=True)
+    )
     return
 
 
@@ -84,8 +103,44 @@ def _(old_establishments, pl):
         .filter(pl.col('state') == 'TX')
         .unique('facility_id')
         .with_columns(
-            address = pl.col('address') + ' ' + pl.col('city')
+            address = pl.col('address') + ' ' + pl.col('city'),
+            inspection_date = pl.col('inspection_date').cast(pl.Datetime).cast(pl.Date),
+            zip_code = pl.col('zip').cast(pl.Int32).cast(pl.Utf8)
         )
+    )
+    return
+
+
+@app.cell
+def _(old_establishments, pl, storage_options):
+    # Write parquet of ATX establishments with preexisting scraped data
+    (
+        old_establishments
+        .filter(pl.col('state') == 'TX')
+        .unique('facility_id')
+        .with_columns(
+            address = pl.col('address') + ' ' + pl.col('city'),
+            inspection_date = pl.col('inspection_date').cast(pl.Datetime).cast(pl.Date),
+            zip_code = pl.col('zip').cast(pl.Int32).cast(pl.Utf8),
+            price = pl.col('price').cast(pl.Utf8)
+        )
+        .select(
+            'restaurant_name',
+            'zip_code',
+            'inspection_date',
+            'score',
+            'address',
+            'facility_id',
+            'process_description',
+            'latitude',
+            'longitude',
+            'google_name',
+            'average_rating',
+            'category',
+            'price',
+            'n_reviews'
+        )
+        .write_parquet('s3://food-establishments-cnmso3jc9/raw/austin/establishments/old_establishment_data.parquet', storage_options=storage_options)
     )
     return
 
@@ -98,6 +153,10 @@ def _(old_establishments, pl):
         .group_by('city')
         .agg(pl.len())
         .sort('len', descending=True)
+        .select(pl.col('city').str.split(' ').explode())
+        .group_by('city')
+        .agg(pl.len())
+        .sort(by='len')
     )
     return
 
