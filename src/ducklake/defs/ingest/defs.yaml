@@ -36,5 +36,5 @@ attributes:
     path: output_files.py
   assets:
     - key: output_files
-      description: "Create the output files"
+      description: "Create the output files for the ATX establishments and inspections"
       deps: ["int_establishments", "stg_inspections"]

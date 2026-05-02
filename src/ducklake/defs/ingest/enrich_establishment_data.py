@@ -144,7 +144,7 @@ if __name__ == "__main__":
         # ==================================================
         # Scrape the establishment information
         # ==================================================
-        for establishment in new_establishments[:2]:
+        for establishment in new_establishments:
             print(f'Searching for the establishment: {establishment["restaurant_name"]}...')
             print(f'At address: {establishment["address"]}')
             page.goto(
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             print(f'Scraped data: {scraped_data}')
             scraped_data_list.append(scraped_data)
 
-            if len(scraped_data_list) >= 2:
+            if len(scraped_data_list) % 100 == 0:
                 temp_df = (
                     pl.DataFrame(scraped_data_list)
                     .with_columns(
@@ -188,3 +188,24 @@ if __name__ == "__main__":
         # ==================================================
         # Save the scraped data to a parquet file
         # ==================================================
+        if len(scraped_data_list) > 0:
+            temp_df = (
+                pl.DataFrame(scraped_data_list)
+                .with_columns(
+                    pl.col('updated_at').cast(pl.Date),
+                    pl.col('facility_id').cast(pl.Int64),
+                    pl.col('zip_code').cast(pl.Utf8),
+                    pl.col('latitude').cast(pl.Float64),
+                    pl.col('longitude').cast(pl.Float64),
+                    pl.col('google_name').cast(pl.Utf8),
+                    pl.col('average_rating').cast(pl.Float64),
+                    pl.col('category').cast(pl.Utf8),
+                    pl.col('price').cast(pl.Utf8),
+                    pl.col('n_reviews').cast(pl.Int64),
+                )
+            )
+            print('Saving temp_df to parquet file...', temp_df)
+            temp_file_path = f's3://{WRITE_PATH}/establishments_{int(time.time())}.parquet'
+            temp_df.write_parquet(temp_file_path, storage_options=storage_options)
+            print(f'Saved {len(temp_df)} establishments to {temp_file_path}')
+            scraped_data_list.clear()
