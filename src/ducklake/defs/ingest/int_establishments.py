@@ -30,6 +30,7 @@ if __name__ == "__main__":
     conn = duckdb.connect('md:food_establishments')
     conn.execute("USE food_establishments")
     conn.execute("CREATE SCHEMA IF NOT EXISTS int")
+    conn.execute("DROP TABLE IF EXISTS int.int_establishments_enriched")
     conn.execute(f"""
         CREATE TABLE IF NOT EXISTS int.int_establishments_enriched AS
         SELECT * FROM read_parquet('gs://{READ_PATH}')
